@@ -239,7 +239,7 @@ specified in the query address. Example of response:
 
 1. Clone the repository:
    ```
-   git clone https://github.com/VladislavLevchikIsAProger/simulation.git
+   git clone https://github.com/VladislavLevchikIsAProger/currency_exchange.git
    ```
 
 2. Open Intellij IDEA and in Main Menu -> Open select the folder you have decloned.
