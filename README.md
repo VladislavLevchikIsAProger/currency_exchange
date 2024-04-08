@@ -1,6 +1,6 @@
 # Currency Exchange REST API Project
 
-![first_photo.png](Finance-system-photo-1-1.png)
+![first_photo.png](https://github.com/VladislavLevchikIsAProger/currency_exchange/assets/153897612/c09228bc-fb39-4492-a9e4-22a73c83532e)
 
 # Overview
 
@@ -20,7 +20,7 @@ currency to another.The idea for the project was taken from [here](https://zhuko
 
 ## Database diagram
 
-![db-diagram.png](image.png)
+![db-diagram.png](https://github.com/VladislavLevchikIsAProger/currency_exchange/assets/153897612/a5f410d4-8c37-43da-9c79-91e5f90a48bb)
 
 ## API features
 
@@ -248,19 +248,20 @@ specified in the query address. Example of response:
   
 4. In the pop-up window, click "+" and add Tomcat :
    
-    ![Add tomcat](image-1.png)
+    ![Add tomcat](https://github.com/VladislavLevchikIsAProger/currency_exchange/assets/153897612/fcb0c610-73a6-4e1b-adf1-3751e638863f)
 
 5. Then click "Fix" : 
 
-    ![alt text](image-2.png)
+    ![Fix botton](https://github.com/VladislavLevchikIsAProger/currency_exchange/assets/153897612/516b7afb-42ef-4374-b96e-2a49d3f866c9)
 
 6. In the window that pops up, select :
 
-   ![alt text](image-3.png)
+   ![War exploded](https://github.com/VladislavLevchikIsAProger/currency_exchange/assets/153897612/db1dd9bc-43bf-41ea-9a3b-8adbada0d580)
+
 
 7. In the Application context leave the following :
    
-   ![alt text](image-4.png)
+   ![Application context](https://github.com/VladislavLevchikIsAProger/currency_exchange/assets/153897612/895091c7-dd29-49b9-8edc-c9b5f29cf018)
 
 8. Click Apply and start Tomcat
 
