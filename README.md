@@ -13,8 +13,7 @@ currency to another.The idea for the project was taken from [here](https://zhuko
 - JDBC
 - SQL
 - Java Servlets
-- PostgreSQL
-- Docker
+- SQLite
 - Postman
 - Maven
 
