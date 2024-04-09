@@ -59,6 +59,7 @@ public class ExchangeRateService {
                 reverseRate);
 
         return Optional.of(exchangeRate);
+
     }
 
 
@@ -72,34 +73,28 @@ public class ExchangeRateService {
         ExchangeRate usdWithBaseCodeExchangeRate = getExchangeRateFromList(exchangeRateListWithUsdBase, baseCurrencyCode);
         ExchangeRate usdWithTargetCodeExchangeRate = getExchangeRateFromList(exchangeRateListWithUsdBase, targetCurrencyCode);
 
-        if (usdWithBaseCodeExchangeRate != null && usdWithTargetCodeExchangeRate != null) {
-            BigDecimal usdToBaseRate = usdWithBaseCodeExchangeRate.getRate();
-            BigDecimal usdToTargetRate = usdWithTargetCodeExchangeRate.getRate();
 
-            BigDecimal baseToTargetRate = usdToTargetRate.divide(usdToBaseRate, DECIMAL64).setScale(2, HALF_EVEN);
+        BigDecimal usdToBaseRate = usdWithBaseCodeExchangeRate.getRate();
+        BigDecimal usdToTargetRate = usdWithTargetCodeExchangeRate.getRate();
 
-            ExchangeRate exchangeRate = new ExchangeRate(
-                    usdWithBaseCodeExchangeRate.getTargetCurrency(),
-                    usdWithTargetCodeExchangeRate.getTargetCurrency(),
-                    baseToTargetRate
-            );
+        BigDecimal baseToTargetRate = usdToTargetRate.divide(usdToBaseRate, DECIMAL64).setScale(2, HALF_EVEN);
 
-            return Optional.of(exchangeRate);
+        ExchangeRate exchangeRate = new ExchangeRate(
+                usdWithBaseCodeExchangeRate.getTargetCurrency(),
+                usdWithTargetCodeExchangeRate.getTargetCurrency(),
+                baseToTargetRate
+        );
 
-        }
+        return Optional.of(exchangeRate);
 
-        return Optional.empty();
     }
 
-    //TODO мб сделать orElseThrow
     private static ExchangeRate getExchangeRateFromList(List<ExchangeRate> exchangeRateListWithUsdBase, String currencyCode) {
 
-        for (ExchangeRate exchangeRate : exchangeRateListWithUsdBase) {
-            if (exchangeRate.getTargetCurrency().getCode().equals(currencyCode)) {
-                return exchangeRate;
-            }
-        }
+        return exchangeRateListWithUsdBase.stream()
+                .filter(rate -> rate.getTargetCurrency().getCode().equals(currencyCode))
+                .findFirst()
+                .orElseThrow();
 
-        return null;
     }
 }
