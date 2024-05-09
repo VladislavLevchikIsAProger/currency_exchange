@@ -12,7 +12,7 @@ currency to another.The idea for the project was taken from [here](https://zhuko
 
 - JDBC
 - SQL
-- Java Servlets
+- Jakarta Servlets
 - SQLite
 - Postman
 - Maven
@@ -231,7 +231,7 @@ specified in the query address. Example of response:
 ## Requirements
   + Java 17+
   + Apache Maven
-  + Tomcat 9
+  + Tomcat 10
   + Intellij IDEA
 
 ## Project launch
