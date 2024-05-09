@@ -1,56 +1,36 @@
 package com.vladlevchik.servlet.currency;
 
+import com.vladlevchik.exception.NotFoundException;
 import com.vladlevchik.model.Currency;
-import com.vladlevchik.model.response.ErrorResponse;
-import com.vladlevchik.repository.CurrencyRepository;
-import com.vladlevchik.repository.JdbcCurrencyRepository;
+import com.vladlevchik.dao.CurrencyDao;
+import com.vladlevchik.dao.JdbcCurrencyDao;
 import com.vladlevchik.servlet.BasicServlet;
-import com.vladlevchik.util.Validation;
+import com.vladlevchik.utils.ValidationUtils;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
-import javax.servlet.ServletException;
-import javax.servlet.annotation.WebServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.sql.SQLException;
-import java.util.NoSuchElementException;
 
-import static javax.servlet.http.HttpServletResponse.*;
+import static com.vladlevchik.utils.MappingUtils.convertToDto;
+import static jakarta.servlet.http.HttpServletResponse.*;
+
 
 @WebServlet("/currency/*")
 public class CurrencyServlet extends BasicServlet {
 
-    private final CurrencyRepository currencyRepository = new JdbcCurrencyRepository();
+    private final CurrencyDao currencyDao = new JdbcCurrencyDao();
 
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        String code = req.getPathInfo().replaceFirst("/", "");
 
-        String currencyCode = getCurrencyCodeFromURL(req);
+        ValidationUtils.validateCurrencyCode(code);
 
-        if (currencyCode == null || currencyCode.isBlank()) {
-            doResponse(resp, SC_BAD_REQUEST, new ErrorResponse("Missing parameter - code"));
-            return;
-        }
+        Currency currency = currencyDao.findByCode(code)
+                .orElseThrow(() -> new NotFoundException("Currency with code " + code + " not found"));
 
-        if (currencyCode.length() != 3) {
-            doResponse(resp, SC_BAD_REQUEST, new ErrorResponse("Incorrect long url"));
-            return;
-        }
+        doResponse(resp, SC_OK, convertToDto(currency));
 
-        if (!Validation.isValidCurrencyCode(currencyCode)) {
-            doResponse(resp, SC_BAD_REQUEST, new ErrorResponse("Currency code must be in ISO 4217 format"));
-            return;
-        }
-
-        try {
-
-            Currency currency = currencyRepository.findByCode(currencyCode).orElseThrow();
-            doResponse(resp, SC_OK, currency);
-
-        } catch (SQLException e) {
-            handleDatabaseError(resp);
-        } catch (NoSuchElementException e) {
-            doResponse(resp, SC_NOT_FOUND, new ErrorResponse("Such currency is not in the database"));
-        }
     }
 }

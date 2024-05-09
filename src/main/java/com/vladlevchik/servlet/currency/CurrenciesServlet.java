@@ -1,88 +1,56 @@
 package com.vladlevchik.servlet.currency;
 
+import com.vladlevchik.dto.CurrencyRequestDto;
+import com.vladlevchik.dto.CurrencyResponseDto;
 import com.vladlevchik.model.Currency;
-import com.vladlevchik.model.response.ErrorResponse;
-import com.vladlevchik.repository.CurrencyRepository;
-import com.vladlevchik.repository.JdbcCurrencyRepository;
+import com.vladlevchik.dao.CurrencyDao;
+import com.vladlevchik.dao.JdbcCurrencyDao;
 import com.vladlevchik.servlet.BasicServlet;
-import com.vladlevchik.util.Validation;
+import com.vladlevchik.utils.MappingUtils;
+import com.vladlevchik.utils.ValidationUtils;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
-import javax.servlet.ServletException;
-import javax.servlet.annotation.WebServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
-import java.sql.SQLException;
 import java.util.List;
+import java.util.stream.Collectors;
 
-import static javax.servlet.http.HttpServletResponse.*;
+import static com.vladlevchik.utils.MappingUtils.convertToDto;
+import static com.vladlevchik.utils.MappingUtils.convertToEntity;
+import static jakarta.servlet.http.HttpServletResponse.*;
 
 @WebServlet(urlPatterns = "/currencies")
 public class CurrenciesServlet extends BasicServlet {
 
-    private final CurrencyRepository currencyRepository = new JdbcCurrencyRepository();
+    private final CurrencyDao currencyDao = new JdbcCurrencyDao();
 
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        List<Currency> currencies = currencyDao.findAll();
 
-        try {
+        List<CurrencyResponseDto> currenciesDto = currencies.stream()
+                        .map(MappingUtils::convertToDto)
+                                .collect(Collectors.toList());
 
-            List<Currency> currencyList = currencyRepository.findAll();
-            doResponse(resp, SC_OK, currencyList);
-
-        } catch (SQLException e) {
-            handleDatabaseError(resp);
-        }
-
+        doResponse(resp, SC_OK, currenciesDto);
     }
 
     @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
 
         String name = req.getParameter("name");
         String code = req.getParameter("code");
         String sign = req.getParameter("sign");
 
-        if (name == null || name.isBlank()) {
-            doResponse(resp, SC_BAD_REQUEST, new ErrorResponse("Missing parameter - name"));
-            return;
-        }
-        if (code == null || code.isBlank()) {
-            doResponse(resp, SC_BAD_REQUEST, new ErrorResponse("Missing parameter - code"));
-            return;
-        }
-        if (sign == null || sign.isBlank()) {
-            doResponse(resp, SC_BAD_REQUEST, new ErrorResponse("Missing parameter - sign"));
-            return;
-        }
+        CurrencyRequestDto currencyRequestDto = new CurrencyRequestDto(name, code, sign);
 
-        if (!Validation.isValidCurrencyName(name)) {
-            doResponse(resp, SC_BAD_REQUEST, new ErrorResponse("Incorrect data - name"));
-            return;
-        }
-        if (!Validation.isValidCurrencyCode(code)) {
-            doResponse(resp, SC_BAD_REQUEST, new ErrorResponse("Currency code must be in ISO 4217 format"));
-            return;
-        }
-        if (!Validation.isValidCurrencySign(sign)) {
-            doResponse(resp, SC_BAD_REQUEST, new ErrorResponse("Incorrect data - sign"));
-            return;
-        }
+        ValidationUtils.validate(currencyRequestDto);
 
-        try {
-            Currency currency = new Currency(code, name, sign);
-            long id = currencyRepository.save(currency);
-            currency.setId(id);
+        Currency currency = currencyDao.save(convertToEntity(currencyRequestDto));
 
-            doResponse(resp, SC_CREATED, currency);
-        } catch (SQLException e) {
+        doResponse(resp, SC_CREATED, convertToDto(currency));
 
-            if (e.getSQLState().equals("23505")) {
-                doResponse(resp, SC_CONFLICT, new ErrorResponse("There is already such a currency"));
-                return;
-            }
-
-            handleDatabaseError(resp);
-        }
     }
 }

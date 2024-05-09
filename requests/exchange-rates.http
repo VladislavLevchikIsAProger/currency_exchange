@@ -1,0 +1,157 @@
+### Get all exchange rates - 200 Ok
+GET http://localhost:8080/exchangeRates
+Accept: application/json
+
+
+
+### Get exchange rate - 200 Ok
+GET http://localhost:8080/exchangeRate/USDEUR
+Accept: application/json
+
+### Get exchange rate - 400 bad request
+### Invalid currency code name
+GET http://localhost:8080/exchangeRate/USDRUb
+Accept: application/json
+
+### Get exchange rate - 400 bad request
+### Invalid currency codes length
+GET http://localhost:8080/exchangeRate/USDRU
+Accept: application/json
+
+### Get exchange rate - 404 not found
+### Exchange rate for currencies is not present in the database
+GET http://localhost:8080/exchangeRate/USDRUB
+Accept: application/json
+
+
+
+### Add new exchange rate - 201 Created
+POST http://localhost:8080/exchangeRates
+Accept: application/json
+Content-Type: application/x-www-form-urlencoded
+
+baseCurrencyCode=GBP &
+targetCurrencyCode=EUR &
+rate=1.17
+
+### Add new exchange rate - 400 bad request
+### Missing parameter baseCurrencyCode
+POST http://localhost:8080/exchangeRates
+Accept: application/json
+Content-Type: application/x-www-form-urlencoded
+
+baseCurrencyCode= &
+targetCurrencyCode=EUR &
+rate=1.17
+
+### Add new exchange rate - 400 bad request
+### Missing parameter targetCurrencyCode
+POST http://localhost:8080/exchangeRates
+Accept: application/json
+Content-Type: application/x-www-form-urlencoded
+
+baseCurrencyCode=GBP &
+targetCurrencyCode= &
+rate=1.17
+
+### Add new exchange rate - 400 bad request
+### Missing parameter rate
+POST http://localhost:8080/exchangeRates
+Accept: application/json
+Content-Type: application/x-www-form-urlencoded
+
+baseCurrencyCode=GBP &
+targetCurrencyCode= &
+rate=
+
+### Add new exchange rate - 400 bad request
+### Invalid parameter baseCurrencyCode
+POST http://localhost:8080/exchangeRates
+Accept: application/json
+Content-Type: application/x-www-form-urlencoded
+
+baseCurrencyCode=123 &
+targetCurrencyCode=EUR &
+rate=1.17
+
+### Add new exchange rate - 400 bad request
+### Invalid parameter targetCurrencyCode
+POST http://localhost:8080/exchangeRates
+Accept: application/json
+Content-Type: application/x-www-form-urlencoded
+
+baseCurrencyCode=GBP &
+targetCurrencyCode=123 &
+rate=1.17
+
+### Add new exchange rate - 400 bad request
+### Invalid parameter rate
+POST http://localhost:8080/exchangeRates
+Accept: application/json
+Content-Type: application/x-www-form-urlencoded
+
+baseCurrencyCode=GBP &
+targetCurrencyCode=EUR &
+rate=1.17a
+
+### Add new exchange rate - 409 Conflict
+### Exchange rate already exist in the database
+POST http://localhost:8080/exchangeRates
+Accept: application/json
+Content-Type: application/x-www-form-urlencoded
+
+baseCurrencyCode=GBP &
+targetCurrencyCode=EUR &
+rate=1.17
+
+### Add new exchange rate - 404 Not Found
+### Currency for which exchange rate is added is not present in the database
+POST http://localhost:8080/exchangeRates
+Accept: application/json
+Content-Type: application/x-www-form-urlencoded
+
+baseCurrencyCode=PLN &
+targetCurrencyCode=EUR &
+rate=1.17
+
+
+
+### Patch exchange rate - 200 Ok
+PATCH http://localhost:8080/exchangeRate/USDEUR
+Accept: application/json
+Content-Type: application/x-www-form-urlencoded
+
+rate=1.5
+
+### Patch exchange rate - 400 Bad request
+### Missing parameter - rate
+PATCH http://localhost:8080/exchangeRate/PLNEUR
+Accept: application/json
+Content-Type: application/x-www-form-urlencoded
+
+rate=
+
+### Patch exchange rate - 400 Bad request
+### Invalid parameter - rate
+PATCH http://localhost:8080/exchangeRate/PLNEUR
+Accept: application/json
+Content-Type: application/x-www-form-urlencoded
+
+rate=abc
+
+### Patch exchange rate - 400 Bad request
+### Invalid сurrency code
+PATCH http://localhost:8080/exchangeRate/PLNEUr
+Accept: application/json
+Content-Type: application/x-www-form-urlencoded
+
+rate=1.20
+
+### Patch exchange rate - 404 Not Found
+### Exchange rate for currencies is not present in the database
+PATCH http://localhost:8080/exchangeRate/PLNEUR
+Accept: application/json
+Content-Type: application/x-www-form-urlencoded
+
+rate=1.32
+

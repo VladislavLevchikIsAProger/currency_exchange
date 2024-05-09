@@ -1,100 +1,31 @@
 package com.vladlevchik.service;
 
+import com.vladlevchik.dao.CurrencyDao;
+import com.vladlevchik.dao.ExchangeRateDao;
+import com.vladlevchik.dao.JdbcCurrencyDao;
+import com.vladlevchik.dao.JdbcExchangeRateDao;
+import com.vladlevchik.dto.ExchangeRateRequestDto;
+import com.vladlevchik.exception.NotFoundException;
+import com.vladlevchik.model.Currency;
 import com.vladlevchik.model.ExchangeRate;
-import com.vladlevchik.model.response.ExchangeResponse;
-import com.vladlevchik.repository.ExchangeRateRepository;
-import com.vladlevchik.repository.JdbcExchangeRateRepository;
-
-import java.math.BigDecimal;
-import java.sql.SQLException;
-import java.util.List;
-import java.util.Optional;
-
-import static java.math.MathContext.DECIMAL64;
-import static java.math.RoundingMode.HALF_EVEN;
 
 public class ExchangeRateService {
 
-    private static final ExchangeRateRepository exchangeRateRepository = new JdbcExchangeRateRepository();
+    private final CurrencyDao currencyDao = new JdbcCurrencyDao();
+    private final ExchangeRateDao exchangeRateDao = new JdbcExchangeRateDao();
 
-    public static ExchangeResponse getExchangeResponse(String baseCurrencyCode, String targetCurrencyCode, BigDecimal amount) throws SQLException {
-        ExchangeRate exchangeRate = getExchangeRate(baseCurrencyCode, targetCurrencyCode).orElseThrow();
-        return new ExchangeResponse(
-                exchangeRate.getBaseCurrency(),
-                exchangeRate.getTargetCurrency(),
-                exchangeRate.getRate(),
-                amount,
-                exchangeRate.getRate().multiply(amount).setScale(2, HALF_EVEN));
+    public ExchangeRate save(ExchangeRateRequestDto exchangeRateRequestDto) {
+        String baseCurrencyCode = exchangeRateRequestDto.getBaseCurrencyCode();
+        String targetCurrencyCode = exchangeRateRequestDto.getTargetCurrencyCode();
+
+        Currency baseCurrency = currencyDao.findByCode(baseCurrencyCode)
+                .orElseThrow(() -> new NotFoundException("Currency with code " + baseCurrencyCode + " not found"));
+        Currency targetCurrency = currencyDao.findByCode(targetCurrencyCode)
+                .orElseThrow(() -> new NotFoundException("Currency with code " + targetCurrencyCode + " not found"));
+
+        ExchangeRate exchangeRate = new ExchangeRate(baseCurrency, targetCurrency, exchangeRateRequestDto.getRate());
+
+        return exchangeRateDao.save(exchangeRate);
     }
 
-    private static Optional<ExchangeRate> getExchangeRate(String baseCurrencyCode, String targetCurrencyCode) throws SQLException {
-        Optional<ExchangeRate> exchangeRate = getExchangeRateByCode(baseCurrencyCode, targetCurrencyCode);
-
-        if (exchangeRate.isEmpty()) {
-            exchangeRate = getReverseExchangeRateByCode(targetCurrencyCode, baseCurrencyCode);
-        }
-
-        if (exchangeRate.isEmpty()) {
-            exchangeRate = getExchangeRateByCodeWithUsd(baseCurrencyCode, targetCurrencyCode);
-        }
-
-        return exchangeRate;
-    }
-
-    private static Optional<ExchangeRate> getReverseExchangeRateByCode(String baseCurrencyCode, String targetCurrencyCode) throws SQLException {
-
-        Optional<ExchangeRate> optionalExchangeRate = getExchangeRateByCode(baseCurrencyCode, targetCurrencyCode);
-
-        if (optionalExchangeRate.isEmpty()) {
-            return Optional.empty();
-        }
-
-        ExchangeRate reverseExchangeRate = optionalExchangeRate.get();
-
-        BigDecimal reverseRate = BigDecimal.ONE.divide(reverseExchangeRate.getRate(), DECIMAL64);
-
-        ExchangeRate exchangeRate = new ExchangeRate(
-                reverseExchangeRate.getTargetCurrency(),
-                reverseExchangeRate.getBaseCurrency(),
-                reverseRate);
-
-        return Optional.of(exchangeRate);
-
-    }
-
-
-    private static Optional<ExchangeRate> getExchangeRateByCode(String baseCurrencyCode, String targetCurrencyCode) throws SQLException {
-        return exchangeRateRepository.findByCodes(baseCurrencyCode, targetCurrencyCode);
-    }
-
-    private static Optional<ExchangeRate> getExchangeRateByCodeWithUsd(String baseCurrencyCode, String targetCurrencyCode) throws SQLException {
-        List<ExchangeRate> exchangeRateListWithUsdBase = exchangeRateRepository.findByCodesWithBaseCurrencyCodeIsUsd(baseCurrencyCode, targetCurrencyCode);
-
-        ExchangeRate usdWithBaseCodeExchangeRate = getExchangeRateFromList(exchangeRateListWithUsdBase, baseCurrencyCode);
-        ExchangeRate usdWithTargetCodeExchangeRate = getExchangeRateFromList(exchangeRateListWithUsdBase, targetCurrencyCode);
-
-
-        BigDecimal usdToBaseRate = usdWithBaseCodeExchangeRate.getRate();
-        BigDecimal usdToTargetRate = usdWithTargetCodeExchangeRate.getRate();
-
-        BigDecimal baseToTargetRate = usdToTargetRate.divide(usdToBaseRate, DECIMAL64).setScale(2, HALF_EVEN);
-
-        ExchangeRate exchangeRate = new ExchangeRate(
-                usdWithBaseCodeExchangeRate.getTargetCurrency(),
-                usdWithTargetCodeExchangeRate.getTargetCurrency(),
-                baseToTargetRate
-        );
-
-        return Optional.of(exchangeRate);
-
-    }
-
-    private static ExchangeRate getExchangeRateFromList(List<ExchangeRate> exchangeRateListWithUsdBase, String currencyCode) {
-
-        return exchangeRateListWithUsdBase.stream()
-                .filter(rate -> rate.getTargetCurrency().getCode().equals(currencyCode))
-                .findFirst()
-                .orElseThrow();
-
-    }
 }

@@ -1,65 +1,52 @@
 package com.vladlevchik.servlet.exchangeRate;
 
-import com.vladlevchik.model.response.ErrorResponse;
-import com.vladlevchik.model.response.ExchangeResponse;
-import com.vladlevchik.service.ExchangeRateService;
+import com.vladlevchik.dto.ExchangeRequestDto;
+import com.vladlevchik.dto.ExchangeResponseDto;
+import com.vladlevchik.exception.InvalidParameterException;
+import com.vladlevchik.service.ExchangeService;
 import com.vladlevchik.servlet.BasicServlet;
-import com.vladlevchik.util.Validation;
+import com.vladlevchik.utils.ValidationUtils;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
-import javax.servlet.ServletException;
-import javax.servlet.annotation.WebServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.sql.SQLException;
-import java.util.NoSuchElementException;
 
-import static javax.servlet.http.HttpServletResponse.*;
+import static jakarta.servlet.http.HttpServletResponse.*;
+
 
 @WebServlet(urlPatterns = "/exchange")
 public class ExchangeServlet extends BasicServlet {
 
+    private final ExchangeService exchangeService = new ExchangeService();
+
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String baseCurrencyCode = req.getParameter("from");
         String targetCurrencyCode = req.getParameter("to");
         String amountParameter = req.getParameter("amount");
 
-        if (baseCurrencyCode == null || baseCurrencyCode.isBlank()) {
-            doResponse(resp, SC_BAD_REQUEST, new ErrorResponse("Missing parameter - base currency code"));
-            return;
-        }
-        if (targetCurrencyCode == null || targetCurrencyCode.isBlank()) {
-            doResponse(resp, SC_BAD_REQUEST, new ErrorResponse("Missing parameter - target currency code"));
-            return;
-        }
         if (amountParameter == null || amountParameter.isBlank()) {
-            doResponse(resp, SC_BAD_REQUEST, new ErrorResponse("Missing parameter - amount"));
-            return;
+            throw new InvalidParameterException("Missing parameter - amount");
         }
 
-        if (!Validation.isValidCurrencyCode(baseCurrencyCode)) {
-            doResponse(resp, SC_BAD_REQUEST, new ErrorResponse("Base currency code must be in ISO 4217 format"));
-            return;
-        }
-        if (!Validation.isValidCurrencyCode(targetCurrencyCode)) {
-            doResponse(resp, SC_BAD_REQUEST, new ErrorResponse("Target currency code must be in ISO 4217 format"));
-            return;
-        }
+        ExchangeRequestDto exchangeRequestDto = new ExchangeRequestDto(baseCurrencyCode, targetCurrencyCode, convertToNumber(amountParameter));
 
+        ValidationUtils.validate(exchangeRequestDto);
+
+        ExchangeResponseDto exchangeResponse = exchangeService.exchange(exchangeRequestDto);
+
+        doResponse(resp, SC_OK, exchangeResponse);
+
+
+    }
+
+    private static BigDecimal convertToNumber(String amount) {
         try {
-
-            BigDecimal amount = new BigDecimal(amountParameter);
-            ExchangeResponse exchangeResponse = ExchangeRateService.getExchangeResponse(baseCurrencyCode, targetCurrencyCode, amount);
-            doResponse(resp, SC_OK, exchangeResponse);
-
+            return new BigDecimal(amount);
         } catch (NumberFormatException e) {
-            doResponse(resp, SC_BAD_REQUEST, new ErrorResponse("Incorrect data - amount"));
-        } catch (SQLException e) {
-            handleDatabaseError(resp);
-        } catch (NoSuchElementException e) {
-            doResponse(resp, SC_NOT_FOUND, new ErrorResponse("Impossible to calculate exchange rate"));
+            throw new InvalidParameterException("Parameter amount must be a number");
         }
     }
 }
